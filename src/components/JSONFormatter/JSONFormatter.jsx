@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import Button from '@material-ui/core/Button';
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import { UnControlled as CodeMirror } from 'react-codemirror2'
 
