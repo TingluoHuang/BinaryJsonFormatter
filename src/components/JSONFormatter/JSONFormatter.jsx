@@ -52,10 +52,6 @@ class FormattedJSON extends Component {
 }
 
 export class JSONFormatter extends Component {
-  clearInputText = () => {
-    this.setState({ 'inputText': '' });
-  };
-
   onInputTextChange = (event, data, value) => {
     try {
       this.setState({ 'inputText': event.target.value });
@@ -108,7 +104,7 @@ export class JSONFormatter extends Component {
   }
 
   componentWillUnmount() {
-    window.confirm('You are leaving the JSON Formatter.')
+    window.confirm('You are leaving the Binary JSON Formatter.')
   }
 
   render() {
@@ -128,11 +124,6 @@ export class JSONFormatter extends Component {
           }}>
             <CodeMirror ref="display" value={this.state.inputText} onChange={this.onInputTextChange} options={inputOptions} preserveScrollPosition={true} autoCursor={false} />
             <br />
-            <Button onClick={this.clearInputText} size="small" variant="contained" color="primary" style={{ fontSize: 11 }}>
-              <i className="far fa-trash-alt"></i>
-              <span style={{ marginLeft: 6 }}>Clear Input</span>
-            </Button>
-            <br /><br />
             <hr />
             <br />
             <span style={{ fontFamily: "Roboto", fontSize: 22, fontWeight: 300, marginBottom: 20 }}>Formatted JSON:</span>
