@@ -82,18 +82,34 @@ export class JSONFormatter extends Component {
 
   getJSONData() {
     // eslint-disable-next-line
-    var outputText, outputClass;
+    var outputText;
     try {
       outputText = this.formatJSON(this.state.inputText);
-      outputClass = 'output-good';
+      if (outputText === "") {
+        outputText = this.state.jobText;
+      }
     }
     catch (err) {
       // JSON.parse threw an exception
-      outputText = 'It looks like there was an error with your JSON---\n\n' + err.message;
-      outputClass = 'output-error';
+      outputText = 'It looks like there was an error with your input---\n\n' + err.message;
     }
 
     return outputText
+  }
+
+  getJoke() {
+    fetch('https://geek-jokes.sameerkumar.website/api?format=json')
+      .then((response) => response.json())
+      .then((responseJson) => {
+        this.setState({ jobText: responseJson.joke })
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }
+
+  componentWillMount() {
+    this.getJoke();
   }
 
   UNSAFE_componentWillMount() {
