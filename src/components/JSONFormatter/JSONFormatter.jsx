@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import { UnControlled as CodeMirror } from 'react-codemirror2'
+import SnappyJS from 'snappyjs'
+import { Buffer } from "buffer";
 
 const zlib = require('zlib');
 require('codemirror/mode/javascript/javascript');
@@ -61,16 +63,30 @@ export class JSONFormatter extends Component {
 
   formatJSON(input) {
     if (input) {
+      var jsonString = "";
       if (!input.startsWith("0x")) {
-        throw new Error("input needs to be a Hex String starts with '0x'.");
+        input = input.replace(/\r?\n|\r/g, "");
+        // check whether the input is a base64 string and then try use snappy to decompress it
+        var base64regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
+        if (base64regex.test(input)) {
+          var uncompressed = SnappyJS.uncompress(Buffer.from(input, 'base64'));
+          let utf8decoder = new TextDecoder()
+          jsonString = utf8decoder.decode(uncompressed);
+        }
+        else {
+          throw new Error("input needs to be a Hex String starts with '0x' or valid base64 string.");
+        }
       }
-      input = input.substring(2);
-      var hex = Buffer.from(input, 'hex');
-      if (input.toLowerCase().startsWith("1f8b")) {
-        // gzip string, need to unzip first
-        hex = zlib.gunzipSync(hex);
+      else {
+        input = input.substring(2);
+        var hex = Buffer.from(input, 'hex');
+        if (input.toLowerCase().startsWith("1f8b")) {
+          // gzip string, need to unzip first
+          hex = zlib.gunzipSync(hex);
+        }
+        jsonString = hex.toString('utf-8');
       }
-      var jsonString = hex.toString('utf-8');
+
       var parsedData = JSON.parse(jsonString);
       var outputText = JSON.stringify(parsedData, null, 4);
       return outputText;
