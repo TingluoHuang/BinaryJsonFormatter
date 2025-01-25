@@ -184,7 +184,7 @@ export class JSONFormatter extends Component {
     return (
       <div>
         <MuiThemeProvider theme={theme}>
-          <span style={{ fontFamily: "Roboto", fontSize: 22, fontWeight: 300, marginBottom: 20 }}>Raw JSON Binary:</span>
+          <span style={{ fontFamily: "Roboto", fontSize: 22, fontWeight: 300, marginBottom: 20 }}>Raw JSON Binary or Global ID:</span>
           <div id="formatter"></div>
           <div style={{
             margin: 0,
