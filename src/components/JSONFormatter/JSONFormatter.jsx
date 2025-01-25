@@ -3,6 +3,7 @@ import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import { UnControlled as CodeMirror } from 'react-codemirror2'
 import SnappyJS from 'snappyjs'
 import { Buffer } from "buffer";
+import { decode } from "@msgpack/msgpack";
 
 const zlib = require('zlib');
 require('codemirror/mode/javascript/javascript');
@@ -18,6 +19,20 @@ const theme = createMuiTheme({
     }
   },
 });
+
+const prefixToTypeName = {
+  R: "Repository",
+  U: "User",
+  O: "Organization",
+  CR: "CheckRun",
+  CS: "CheckSuite",
+  BOT: "Bot",
+  E: "Business",
+  EN: "Environment",
+  M: "Mannequin",
+  A: "App",
+  GA: "Gate",
+};
 
 // Additional CodeMirror options can be found here: https://github.com/JedWatson/react-codemirror
 var inputOptions = {
@@ -74,7 +89,34 @@ export class JSONFormatter extends Component {
           jsonString = utf8decoder.decode(uncompressed);
         }
         else {
-          throw new Error("input needs to be a Hex String starts with '0x' or valid base64 string.");
+          var parts = input.split('_', 2);
+          if (parts.length !== 2) {
+            throw new Error("input needs to be a Hex String starts with '0x', valid base64 string or a valid global relay id string.");
+          }
+
+          const [typeHint, idPart] = parts;
+          const typeName = prefixToTypeName[typeHint];
+          if (!typeName) {
+            throw new Error("input needs to be a Hex String starts with '0x', valid base64 string or a valid global relay id string.");
+          }
+
+          const trimmed = idPart.trim();
+          if (!trimmed) {
+            throw new Error("input needs to be a Hex String starts with '0x', valid base64 string or a valid global relay id string.");
+          }
+
+          const packedMsg = Buffer.from(trimmed, 'base64');
+          const decoded = decode(packedMsg);
+          if (!Array.isArray(decoded) || decoded.length < 2) {
+            throw new Error("input needs to be a Hex String starts with '0x', valid base64 string or a valid global relay id string.");
+          }
+
+          const idInt = decoded[decoded.length - 1];
+
+          var json = {};
+          json["type"] = typeName;
+          json["id"] = idInt;
+          jsonString = JSON.stringify(json, null, 4);
         }
       }
       else {
