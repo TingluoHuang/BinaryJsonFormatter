@@ -3,7 +3,7 @@ import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import { UnControlled as CodeMirror } from 'react-codemirror2'
 import SnappyJS from 'snappyjs'
 import { Buffer } from "buffer";
-import { decode } from "@msgpack/msgpack";
+import { decode, encode } from "@msgpack/msgpack";
 
 const zlib = require('zlib');
 require('codemirror/mode/javascript/javascript');
@@ -83,10 +83,24 @@ export class JSONFormatter extends Component {
         input = input.replace(/\r?\n|\r/g, "");
         // check whether the input is a base64 string and then try use snappy to decompress it
         var base64regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
+        var intRegex = /^[0-9]+$/;
         if (base64regex.test(input)) {
           var uncompressed = SnappyJS.uncompress(Buffer.from(input, 'base64'));
           let utf8decoder = new TextDecoder()
           jsonString = utf8decoder.decode(uncompressed);
+        }
+        else if (intRegex.test(input)) {
+          var intValue = parseInt(input, 10); // base 10
+          var ids = [0, intValue]; // Example: Wrap it in an array
+          var encodedBuffer = encode(ids);
+          var base64WithoutPadding = Buffer.from(encodedBuffer).toString('base64').replace(/=+$/, '');
+
+          var json = {};
+          json["Enterprise"] = 'E_' + base64WithoutPadding;
+          json["Organization"] = 'O_' + base64WithoutPadding;
+          json["User"] = 'U_' + base64WithoutPadding;
+          json["Repository"] = 'R_' + base64WithoutPadding;
+          jsonString = JSON.stringify(json, null, 4);
         }
         else {
           var parts = input.split('_', 2);
