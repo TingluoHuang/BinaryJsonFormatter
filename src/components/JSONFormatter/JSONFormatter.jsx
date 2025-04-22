@@ -95,12 +95,12 @@ export class JSONFormatter extends Component {
           var encodedBuffer = encode(ids);
           var base64WithoutPadding = Buffer.from(encodedBuffer).toString('base64').replace(/=+$/, '');
 
-          var json = {};
-          json["Enterprise"] = 'E_' + base64WithoutPadding;
-          json["Organization"] = 'O_' + base64WithoutPadding;
-          json["User"] = 'U_' + base64WithoutPadding;
-          json["Repository"] = 'R_' + base64WithoutPadding;
-          jsonString = JSON.stringify(json, null, 4);
+          var protential_json = {};
+          protential_json["Enterprise"] = 'E_' + base64WithoutPadding;
+          protential_json["Organization"] = 'O_' + base64WithoutPadding;
+          protential_json["User"] = 'U_' + base64WithoutPadding;
+          protential_json["Repository"] = 'R_' + base64WithoutPadding;
+          jsonString = JSON.stringify(protential_json, null, 4);
         }
         else {
           var parts = input.split('_', 2);
