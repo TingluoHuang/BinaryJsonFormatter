@@ -1,14 +1,20 @@
-FROM node:12-alpine as build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
-COPY . /app
+# Copy package files first for better caching
+COPY package.json package-lock.json* ./
 
-RUN npm install --silent
-RUN npm install react-scripts@3.4.1 -g --silent
+# Install dependencies
+RUN npm ci --silent --only=production=false
+
+# Copy the rest of the application
+COPY . .
+
+# Build the application
 RUN npm run build
 
-FROM nginx:1.16-alpine
+FROM nginx:1.25-alpine
 
 COPY --from=build /app/build /usr/share/nginx/html
 RUN rm /etc/nginx/conf.d/default.conf

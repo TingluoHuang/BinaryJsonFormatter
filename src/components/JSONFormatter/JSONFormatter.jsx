@@ -1,23 +1,38 @@
 import React, { Component } from "react";
-import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
-import { UnControlled as CodeMirror } from 'react-codemirror2'
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { Container, Box, Typography, Divider, CssBaseline } from '@mui/material';
+import CodeMirror from '@uiw/react-codemirror';
+import { javascript } from '@codemirror/lang-javascript';
+import { oneDark } from '@codemirror/theme-one-dark';
 import SnappyJS from 'snappyjs'
 import { Buffer } from "buffer";
 import { decode, encode } from "@msgpack/msgpack";
 import { Reader } from "protobufjs";
+import zlib from 'browserify-zlib';
+import './JSONFormatter.css';
 
-const zlib = require('zlib');
-require('codemirror/mode/javascript/javascript');
-require('codemirror/lib/codemirror.css');
-require('codemirror/theme/material.css');
-
-// MaterialUI Theme Options: https://material-ui.com/customization/themes/#theme-configuration-variables
-const theme = createMuiTheme({
+// MaterialUI Theme Options: https://mui.com/material-ui/customization/theming/
+const theme = createTheme({
   palette: {
+    mode: 'dark',
     primary: {
       main: '#253237', // Dark Blue
-      contrastText: '#AAA', // Grey
-    }
+      contrastText: '#fff',
+    },
+    background: {
+      default: '#121212',
+      paper: '#1e1e1e',
+    },
+    text: {
+      primary: '#ffffff',
+      secondary: '#aaaaaa',
+    },
+  },
+  typography: {
+    fontFamily: 'Roboto, Arial, sans-serif',
+    h6: {
+      fontWeight: 300,
+    },
   },
 });
 
@@ -102,46 +117,38 @@ function getWireTypeName(wireType) {
   return wireTypeNames[wireType] || "UNKNOWN";
 }
 
-// Additional CodeMirror options can be found here: https://github.com/JedWatson/react-codemirror
-var inputOptions = {
-  lineNumbers: true,
-  mode: { name: 'javascript', json: true },
-  theme: 'material',
-  autofocus: true // Input box will take user input on page load
-};
-
-var outputOptions = {
-  lineNumbers: true,
-  mode: { name: 'javascript', json: true },
-  theme: 'material',
-  readOnly: true
-};
+// Additional CodeMirror options can be found here: https://codemirror.net/
+const inputExtensions = [javascript({ jsx: true })];
+const outputExtensions = [javascript({ jsx: true })];
 
 class FormattedJSON extends Component {
   render() {
     return (
-      <div>
+      <Box>
         <CodeMirror
-          ref="editor"
           value={this.props.inputText}
-          options={outputOptions}
-          autoFocus={true}
-          onChange={() => { }}
-          preserveScrollPosition={true}
+          extensions={outputExtensions}
+          theme={oneDark}
+          editable={false}
+          basicSetup={{
+            lineNumbers: true,
+            foldGutter: true,
+            dropCursor: false,
+            allowMultipleSelections: false,
+          }}
+          style={{ 
+            fontSize: '14px',
+            minHeight: '300px'
+          }}
         />
-        <br />
-      </div>
+      </Box>
     );
   }
 }
 
 export class JSONFormatter extends Component {
-  onInputTextChange = (event, data, value) => {
-    try {
-      this.setState({ 'inputText': event.target.value });
-    } catch (err) {
-      this.setState({ 'inputText': value });
-    }
+  onInputTextChange = (value) => {
+    this.setState({ 'inputText': value });
   };
 
   formatJSON(input) {
@@ -279,31 +286,45 @@ export class JSONFormatter extends Component {
 
   render() {
     return (
-      <div>
-        <MuiThemeProvider theme={theme}>
-          <span style={{ fontFamily: "Roboto", fontSize: 22, fontWeight: 300, marginBottom: 20 }}>Raw JSON Binary or Global ID:</span>
-          <div id="formatter"></div>
-          <div style={{
-            margin: 0,
-            padding: 0,
-            border: 0,
-            fontSize: '100%',
-            font: 'inherit',
-            verticalAlign: 'baseline',
-            width: '99%'
-          }}>
-            <CodeMirror ref="display" value={this.state.inputText} onChange={this.onInputTextChange} options={inputOptions} preserveScrollPosition={true} autoCursor={false} />
-            <br />
-            <hr />
-            <br />
-            <span style={{ fontFamily: "Roboto", fontSize: 22, fontWeight: 300, marginBottom: 20 }}>Formatted JSON:</span>
-            <FormattedJSON
-              inputText={this.getJSONData()}
-            />
-            <br />
-          </div>
-        </MuiThemeProvider>
-      </div>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Container maxWidth="lg" sx={{ py: 3 }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" component="h2" gutterBottom sx={{ fontWeight: 300 }}>
+              Raw JSON Binary or Global ID:
+            </Typography>
+            
+            <Box sx={{ mb: 3, border: '1px solid #333', borderRadius: 1 }}>
+              <CodeMirror 
+                value={this.state.inputText} 
+                onChange={this.onInputTextChange} 
+                extensions={inputExtensions}
+                theme={oneDark}
+                basicSetup={{
+                  lineNumbers: true,
+                  foldGutter: true,
+                  autocompletion: true,
+                  searchKeymap: true,
+                }}
+                style={{ 
+                  fontSize: '14px',
+                  minHeight: '200px'
+                }}
+              />
+            </Box>
+            
+            <Divider sx={{ my: 3 }} />
+            
+            <Typography variant="h6" component="h2" gutterBottom sx={{ fontWeight: 300 }}>
+              Formatted JSON:
+            </Typography>
+            
+            <Box sx={{ border: '1px solid #333', borderRadius: 1 }}>
+              <FormattedJSON inputText={this.getJSONData()} />
+            </Box>
+          </Box>
+        </Container>
+      </ThemeProvider>
     );
   }
 }

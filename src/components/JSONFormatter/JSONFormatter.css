@@ -1,3 +1,27 @@
 .CodeMirror-readonly .CodeMirror-cursor {
-    display: none !important
+    display: none !important;
+}
+
+/* Ensure CodeMirror editors take full width */
+.cm-editor {
+    width: 100% !important;
+}
+
+.cm-editor.cm-focused {
+    outline: none !important;
+}
+
+/* Fix CodeMirror height issues */
+.cm-scroller {
+    font-family: 'Roboto Mono', 'Courier New', monospace !important;
+}
+
+/* Custom styling for better appearance */
+.json-formatter-container {
+    padding: 16px;
+}
+
+.code-editor-wrapper {
+    border-radius: 8px;
+    overflow: hidden;
 }
