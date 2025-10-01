@@ -4,6 +4,7 @@ import { UnControlled as CodeMirror } from 'react-codemirror2'
 import SnappyJS from 'snappyjs'
 import { Buffer } from "buffer";
 import { decode, encode } from "@msgpack/msgpack";
+import { Reader } from "protobufjs";
 
 const zlib = require('zlib');
 require('codemirror/mode/javascript/javascript');
@@ -33,6 +34,73 @@ const prefixToTypeName = {
   A: "App",
   GA: "Gate",
 };
+
+// Helper function to parse protobuf buffer and extract field information
+function parseProtobufBuffer(buffer) {
+  const reader = new Reader(buffer);
+  const fields = {};
+  
+  while (reader.pos < reader.len) {
+    const tag = reader.uint32();
+    const fieldNumber = tag >>> 3;
+    const wireType = tag & 7;
+    
+    let value;
+    switch (wireType) {
+      case 0: // Varint
+        value = reader.uint64().toString();
+        break;
+      case 1: // 64-bit
+        value = reader.fixed64().toString();
+        break;
+      case 2: // Length-delimited
+        const bytes = reader.bytes();
+        // Try to parse as string, fallback to hex
+        try {
+          value = new TextDecoder().decode(bytes);
+          // If it contains non-printable characters, show as hex
+          if (!/^[\x20-\x7E]*$/.test(value)) {
+            value = Buffer.from(bytes).toString('hex');
+          }
+        } catch {
+          value = Buffer.from(bytes).toString('hex');
+        }
+        break;
+      case 3: // Start group (deprecated)
+        value = "start_group";
+        break;
+      case 4: // End group (deprecated)
+        value = "end_group";
+        break;
+      case 5: // 32-bit
+        value = reader.fixed32();
+        break;
+      default:
+        value = "unknown_wire_type";
+    }
+    
+    fields[`field_${fieldNumber}`] = {
+      field_number: fieldNumber,
+      wire_type: wireType,
+      wire_type_name: getWireTypeName(wireType),
+      value: value
+    };
+  }
+  
+  return fields;
+}
+
+function getWireTypeName(wireType) {
+  const wireTypeNames = {
+    0: "VARINT",
+    1: "I64", 
+    2: "LEN",
+    3: "SGROUP",
+    4: "EGROUP", 
+    5: "I32"
+  };
+  return wireTypeNames[wireType] || "UNKNOWN";
+}
 
 // Additional CodeMirror options can be found here: https://github.com/JedWatson/react-codemirror
 var inputOptions = {
@@ -85,9 +153,24 @@ export class JSONFormatter extends Component {
         var base64regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
         var intRegex = /^[0-9]+$/;
         if (base64regex.test(input)) {
-          var uncompressed = SnappyJS.uncompress(Buffer.from(input, 'base64'));
-          let utf8decoder = new TextDecoder()
-          jsonString = utf8decoder.decode(uncompressed);
+          try {
+            // First try snappy decompression
+            var uncompressed = SnappyJS.uncompress(Buffer.from(input, 'base64'));
+            let utf8decoder = new TextDecoder()
+            jsonString = utf8decoder.decode(uncompressed);
+          } catch (snappyError) {
+            try {
+              // If snappy fails, try protobuf parsing
+              const protobufBuffer = Buffer.from(input, 'base64');
+              const parsedProtobuf = parseProtobufBuffer(protobufBuffer);
+              jsonString = JSON.stringify({
+                type: "protobuf_message",
+                fields: parsedProtobuf
+              }, null, 4);
+            } catch (protobufError) {
+              throw new Error("Unable to parse as snappy-compressed or protobuf data: " + protobufError.message);
+            }
+          }
         }
         else if (intRegex.test(input)) {
           var intValue = parseInt(input, 10); // base 10
